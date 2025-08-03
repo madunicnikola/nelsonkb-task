@@ -10,15 +10,14 @@ import LoadingScreen from './LoadingScreen';
 interface Scene3DProps {
   viewMode: '3D' | '2D';
   resetTrigger?: number;
-  currentScene: 'kitchen1' | 'kitchen2';
+  currentScene?: 'kitchen1' | 'kitchen2';
 }
 
-function SceneContent({ viewMode, onCameraDataLoaded, onDataLoaded, resetTrigger, currentScene }: { 
+function SceneContent({ viewMode, onCameraDataLoaded, onDataLoaded, resetTrigger }: { 
   viewMode: '3D' | '2D', 
   onCameraDataLoaded?: (cameraData: CameraData) => void, 
   onDataLoaded?: () => void,
-  resetTrigger?: number,
-  currentScene: 'kitchen1' | 'kitchen2'
+  resetTrigger?: number
 }) {
   const { camera } = useThree();
   const [models, setModels] = useState<ModelData[]>([]);
@@ -42,7 +41,7 @@ function SceneContent({ viewMode, onCameraDataLoaded, onDataLoaded, resetTrigger
         onDataLoaded?.();
         
         if (sceneData.models.length === 2 && 
-            sceneData.models[0].position[0] === -2 && sceneData.models[1].position[0] === 2) {
+            sceneData.models[0].position[0] === -4 && sceneData.models[1].position[0] === 4) {
           await saveSceneData(sceneData.models, sceneData.camera);
         }
       } catch (error) {
@@ -59,13 +58,13 @@ function SceneContent({ viewMode, onCameraDataLoaded, onDataLoaded, resetTrigger
     const defaultModels: ModelData[] = [
       {
         id: 'kitchen1',
-        position: [-2, 1, 8],
+        position: [-4, 0.5, 0],
         rotation: [0, Math.PI / -1.9, 0],
         scale: [1, 1, 1]
       },
       {
         id: 'kitchen2',
-        position: [-1.5, 2.5, 14],
+        position: [4, 1.5, 4],
         rotation: [0, -1.7, 0],
         scale: [1, 1, 1]
       }
@@ -208,14 +207,15 @@ function SceneContent({ viewMode, onCameraDataLoaded, onDataLoaded, resetTrigger
 
   return (
     <>
-      <ambientLight intensity={1} />
-      <directionalLight position={[10, 10, 5]} intensity={1.5} />
-      <pointLight position={[-10, -10, -5]} intensity={0.8} />
-      <pointLight position={[0, 10, 0]} intensity={0.6} />
-      <spotLight position={[5, 10, 5]} intensity={0.8} angle={0.3} penumbra={0.5} />
+      <ambientLight intensity={2.5} />
+      <directionalLight position={[10, 10, 5]} intensity={2.5} />
+      <pointLight position={[-10, -10, -5]} intensity={1.5} />
+      <pointLight position={[0, 10, 0]} intensity={1.2} />
+      <spotLight position={[5, 10, 5]} intensity={1.5} angle={0.3} penumbra={0.3} />
+      <pointLight position={[10, 5, 10]} intensity={1.0} />
+      <pointLight position={[-10, 5, -10]} intensity={1.0} />
       
       {models
-        .filter(model => model.id === currentScene)
         .map((model) => (
           <Model3D
             key={model.id}
@@ -227,13 +227,14 @@ function SceneContent({ viewMode, onCameraDataLoaded, onDataLoaded, resetTrigger
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             isDragging={isDragging}
+            allModels={models}
           />
         ))}
     </>
   );
 }
 
-function SceneWithData({ viewMode, resetTrigger, currentScene }: Scene3DProps) {
+function SceneWithData({ viewMode, resetTrigger }: Omit<Scene3DProps, 'currentScene'> & { currentScene?: string }) {
   const [sceneData, setSceneData] = useState<{ models: ModelData[], camera: CameraData } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -249,15 +250,15 @@ function SceneWithData({ viewMode, resetTrigger, currentScene }: Scene3DProps) {
         setSceneData(data);
         
         if (data.models.length === 2 && 
-            data.models[0].position[0] === -2 && data.models[1].position[0] === 2) {
+            data.models[0].position[0] === -4 && data.models[1].position[0] === 4) {
           await saveSceneData(data.models, data.camera);
         }
       } catch (error) {
         console.error('Failed to load scene:', error);
         const defaultData = {
           models: [
-            { id: 'kitchen1', position: [-2, 0, 0] as [number, number, number], rotation: [Math.PI / 6, 0, 0] as [number, number, number], scale: [1, 1, 1] as [number, number, number] },
-            { id: 'kitchen2', position: [-1.5, 2.5, 8] as [number, number, number], rotation: [0, -1.7, 0] as [number, number, number], scale: [1, 1, 1] as [number, number, number] }
+            { id: 'kitchen1', position: [-4, 0, 0] as [number, number, number], rotation: [0, Math.PI, 0] as [number, number, number], scale: [1, 1, 1] as [number, number, number] },
+            { id: 'kitchen2', position: [4, 0, 0] as [number, number, number], rotation: [0, Math.PI, 0] as [number, number, number], scale: [1, 1, 1] as [number, number, number] }
           ],
           camera: { position: [0, 1, 8] as [number, number, number], target: [0, 0, 0] as [number, number, number] }
         };
@@ -301,7 +302,6 @@ function SceneWithData({ viewMode, resetTrigger, currentScene }: Scene3DProps) {
           onCameraDataLoaded={() => {}} 
           onDataLoaded={() => {}}
           resetTrigger={resetTrigger}
-          currentScene={currentScene}
         />
         {viewMode === '2D' && (
           <OrbitControls 
@@ -328,6 +328,6 @@ function SceneWithData({ viewMode, resetTrigger, currentScene }: Scene3DProps) {
   );
 }
 
-export default function Scene3D({ viewMode, resetTrigger, currentScene }: Scene3DProps) {
-  return <SceneWithData viewMode={viewMode} resetTrigger={resetTrigger} currentScene={currentScene} />;
+export default function Scene3D({ viewMode, resetTrigger }: Scene3DProps) {
+  return <SceneWithData viewMode={viewMode} resetTrigger={resetTrigger} currentScene={'kitchen1'} />;
 } 

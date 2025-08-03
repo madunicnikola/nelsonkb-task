@@ -63,14 +63,14 @@ export const loadSceneData = async (): Promise<{ models: ModelData[], camera: Ca
         models: [
           {
             id: 'kitchen1',
-            position: [-2, 0, 0],
-            rotation: [0, 0, 0],
+            position: [-4, 0, 0],
+            rotation: [0, Math.PI, 0],
             scale: [1, 1, 1]
           },
           {
             id: 'kitchen2',
-            position: [2, 0, 0],
-            rotation: [0, 0, 0],
+            position: [4, 0, 0],
+            rotation: [0, Math.PI, 0],
             scale: [1, 1, 1]
           }
         ],

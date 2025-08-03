@@ -15,6 +15,7 @@ interface Model3DProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   isDragging?: boolean;
+  allModels: ModelData[];
 }
 
 export default function Model3D({ 
@@ -25,7 +26,8 @@ export default function Model3D({
   onSelect,
   onDragStart,
   onDragEnd,
-  isDragging: parentIsDragging
+  isDragging: parentIsDragging,
+  allModels
 }: Model3DProps) {
   const meshRef = useRef<any>(null);
   const { gl, pointer } = useThree();
@@ -42,6 +44,22 @@ export default function Model3D({
   
   const clonedScene = scene.clone();
 
+  const checkCollision = (newPos: Vector3, currentModelId: string): boolean => {
+    const modelRadius = 2;
+    
+    for (const otherModel of allModels) {
+      if (otherModel.id === currentModelId) continue;
+      
+      const otherPos = new Vector3(...otherModel.position);
+      const distance = newPos.distanceTo(otherPos);
+      
+      if (distance < modelRadius * 2) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (!isSelected) return;
 
@@ -49,17 +67,9 @@ export default function Model3D({
       const rotationAmount = Math.PI / 8;
       
       switch (event.key) {
-        case 'q':
-        case 'Q':
-          onRotationChange(modelData.id, [modelData.rotation[0] + rotationAmount, modelData.rotation[1], modelData.rotation[2]]);
-          break;
         case 'w':
         case 'W':
           onRotationChange(modelData.id, [modelData.rotation[0], modelData.rotation[1] + rotationAmount, modelData.rotation[2]]);
-          break;
-        case 'e':
-        case 'E':
-          onRotationChange(modelData.id, [modelData.rotation[0], modelData.rotation[1], modelData.rotation[2] + rotationAmount]);
           break;
       }
     };
@@ -73,17 +83,18 @@ export default function Model3D({
       const movementScale = 5;
       
       const deltaX = (pointer.x - initialMousePos.x) * movementScale;
-      const deltaY = (pointer.y - initialMousePos.y) * movementScale;
+      const deltaZ = -(pointer.y - initialMousePos.y) * movementScale;
       
       const newPosition = new Vector3(
         initialObjectPos.x + deltaX,
-        initialObjectPos.y + deltaY,
-        initialObjectPos.z 
+        initialObjectPos.y,
+        initialObjectPos.z + deltaZ
       );
       
-      meshRef.current.position.copy(newPosition);
-      
-      onPositionChange(modelData.id, [newPosition.x, newPosition.y, newPosition.z], true);
+      if (!checkCollision(newPosition, modelData.id)) {
+        meshRef.current.position.copy(newPosition);
+        onPositionChange(modelData.id, [newPosition.x, newPosition.y, newPosition.z], true);
+      }
     }
   });
 
@@ -125,10 +136,9 @@ export default function Model3D({
     return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
   }, [isDragging, gl.domElement, onDragEnd]);
 
-  const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
+  const handleRotationChange = (axis: 'y', value: number) => {
     const newRotation: [number, number, number] = [...modelData.rotation];
-    const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
-    newRotation[axisIndex] = value;
+    newRotation[1] = value;
     onRotationChange(modelData.id, newRotation);
   };
 
@@ -148,22 +158,7 @@ export default function Model3D({
       {isSelected && (
         <group>
           <mesh 
-            position={[2, 0, 0]} 
-            userData={{ isRotationControl: true }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleRotationChange('x', modelData.rotation[0] + Math.PI / 4);
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <sphereGeometry args={[0.2]} />
-            <meshBasicMaterial color="red" />
-          </mesh>
-          
-          <mesh 
-            position={[0, 0, 2]} 
+            position={[0, 2, 0]} 
             userData={{ isRotationControl: true }}
             onClick={(e) => {
               e.stopPropagation();
@@ -173,23 +168,8 @@ export default function Model3D({
               e.stopPropagation();
             }}
           >
-            <sphereGeometry args={[0.2]} />
-            <meshBasicMaterial color="green" />
-          </mesh>
-          
-          <mesh 
-            position={[0, 2, 0]} 
-            userData={{ isRotationControl: true }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleRotationChange('z', modelData.rotation[2] + Math.PI / 4);
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <sphereGeometry args={[0.2]} />
-            <meshBasicMaterial color="blue" />
+            <sphereGeometry args={[0.3]} />
+            <meshBasicMaterial color="yellow" />
           </mesh>
         </group>
       )}
